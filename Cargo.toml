@@ -1,0 +1,5 @@
+[workspace]
+members = [
+  "kong_rs", "kong_rs_macros", "kong_rs_protos",
+  "examples"
+]
