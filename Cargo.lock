@@ -209,7 +209,11 @@ dependencies = [
 name = "kong_rs_examples"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
+ "async-trait",
+ "http",
  "kong_rs",
+ "serde",
  "serde_json",
  "tokio",
 ]

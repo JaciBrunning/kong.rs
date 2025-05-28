@@ -1,4 +1,4 @@
-use std::{collections::HashMap, sync::{atomic::AtomicI32, Arc}, time::SystemTime};
+use std::{collections::HashMap, path::Path, sync::{atomic::AtomicI32, Arc}, time::SystemTime};
 
 use kong_rs_protos::{rpc_call::Call, rpc_return::Return, InstanceStatus, PluginInfo, PluginNames, RpcCall, RpcReturn};
 use tokio::{net::UnixListener, sync::RwLock};
@@ -19,12 +19,19 @@ struct RegisteredFactory {
 }
 
 #[derive(Clone, serde::Serialize)]
-struct ServerInfo {
+struct Schema {
   name: String,
-  priority: i32,
-  version: String,
-  schema: String,
-  phases: Vec<String>
+  fields: serde_json::Value
+}
+
+#[derive(Clone, serde::Serialize)]
+#[allow(non_snake_case)]
+struct ServerInfo {
+  Name: String,
+  Priority: i32,
+  Version: String,
+  Schema: Schema,
+  Phases: Vec<String>
 }
 
 pub struct PluginServerBroker {
@@ -42,8 +49,9 @@ impl PluginServerBroker {
     self.plugin_factories.write().await.insert(factory.get_info().name, RegisteredFactory { time: SystemTime::now(), factory: Box::new(factory) });
   }
 
-  pub async fn run<'a, I: Iterator<Item = &'a str>>(&self, mut args: I) -> anyhow::Result<()> {
+  pub async fn run<'a, I: Iterator<Item = String>>(&self, mut args: I) -> anyhow::Result<()> {
     let name = args.next().ok_or(anyhow::anyhow!("Missing name argument"))?;
+    let basename = Path::new(&name).file_name().unwrap().to_str().unwrap();
 
     if args.any(|x| x == "-dump") {
       // Dump
@@ -55,18 +63,20 @@ impl PluginServerBroker {
       let factory = factory.values().next().unwrap();
       let info = factory.factory.get_info();
 
-      println!("{}", serde_json::to_string(&ServerInfo {
-        name: info.name,
-        priority: info.priority as i32,
-        version: info.version,
-        schema: info.schema,
-        phases: info.phases.into_iter().map(|x| Into::<&str>::into(x).to_owned()).collect()
+      let infos = format!("{{\"Protocol\":\"ProtoBuf:1\",\"Plugins\":[{}]}}", serde_json::to_string(&ServerInfo {
+        Name: basename.to_owned(),
+        Priority: info.priority as i32,
+        Version: info.version,
+        Schema: Schema { name: info.name, fields: info.schema },
+        Phases: info.phases.into_iter().map(|x| Into::<&str>::into(x).to_owned()).collect()
       })?);
+
+      println!("{}", infos);
 
       return Ok(())
     }
 
-    let socket_addr = format!("/usr/local/kong/{}.socket", name);
+    let socket_addr = format!("/usr/local/kong/{}.socket", basename);
     std::fs::remove_file(&socket_addr).ok();   // Remove if exists, otherwise no-op
 
     let listener = UnixListener::bind(&socket_addr)?;
@@ -124,22 +134,30 @@ impl PluginServer {
       Some(Call::CmdGetPluginInfo(get_info)) => {
         let factories = self.plugin_factories.read().await;
         let factory = factories.get(&get_info.name);
-        factory.map(|factory| {
+        if let Some(factory) = factory {
           let info = factory.factory.get_info();
-          Return::PluginInfo(PluginInfo {
+          let schema = Schema { name: info.name.clone(), fields: info.schema };
+          Some(Return::PluginInfo(PluginInfo {
             name: info.name,
             updated_at: factory.time.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs() as i64,
             loaded_at: factory.time.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs() as i64,
             phases: info.phases.into_iter().map(|x| Into::<&str>::into(x).to_owned()).collect(),
             version: info.version,
             priority: info.priority,
-            schema: info.schema,
-          })
-        })
+            schema: serde_json::to_string(&schema)?,
+          }))
+        } else {
+          None
+        }
       },
       Some(Call::CmdStartInstance(inst_req)) => {
         let factories = self.plugin_factories.read().await;
-        let factory = factories.get(&inst_req.name);
+        // let factory = factories.get(&inst_req.name);
+
+        // TODO: We can only have one plugin per pluginserver, and it inherits the name of the process.
+        //       In such case, the first factory is the only one...
+        // TODO: When Kong starts to support multiple plugins, deal with it then.
+        let factory = factories.values().next();
         if let Some(factory) = factory {
           let plugin = factory.factory.new(std::str::from_utf8(&inst_req.config)?).await;
           let inst = Instance {
@@ -185,7 +203,13 @@ impl PluginServer {
 
         if let Some(inst) = inst {
           inst.plugin._call_phase(&phase, &Pdk::new(stream.clone())).await;
-          None
+
+          Some(Return::InstanceStatus(InstanceStatus {
+            name: inst.plugin.name(),
+            instance_id: inst.id,
+            config: None,     // TODO: this isn't currently used in Kong as far as I can tell
+            started_at: inst.start_time.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs() as i64,
+          }))
         } else {
           None
         }

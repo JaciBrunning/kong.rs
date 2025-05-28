@@ -74,7 +74,7 @@ impl<P: Plugin> ErasedPlugin for P {
 }
 
 pub trait PluginConfig {
-  fn schema() -> String;
+  fn schema_fields() -> serde_json::Value;
 }
 
 pub struct PluginInfo {
@@ -82,7 +82,7 @@ pub struct PluginInfo {
   pub phases: Vec<Phase>,
   pub version: String,
   pub priority: i32,
-  pub schema: String,
+  pub schema: serde_json::Value,
 }
 
 #[async_trait::async_trait]
@@ -109,7 +109,7 @@ impl<F: PluginFactory + Send + Sync> ErasedPluginFactory for F {
       phases: F::Plugin::PHASES.to_vec(),
       version: F::Plugin::VERSION.to_owned(),
       priority: F::Plugin::PRIORITY,
-      schema: <F::Plugin as Plugin>::Config::schema()
+      schema: <F::Plugin as Plugin>::Config::schema_fields()
     }
   }
 }

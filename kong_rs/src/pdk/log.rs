@@ -38,32 +38,32 @@ impl LogPDK {
     }).await
   }
 
-  pub async fn alert(&mut self, args: String) -> anyhow::Result<()> {
-    self.do_log(Methods::Alert, args).await
+  pub async fn alert<T: Into<String>>(&mut self, args: T) -> anyhow::Result<()> {
+    self.do_log(Methods::Alert, args.into()).await
   }
 
-  pub async fn crit(&self, args: String) -> anyhow::Result<()> {
-    self.do_log(Methods::Crit, args).await
+  pub async fn crit<T: Into<String>>(&self, args: T) -> anyhow::Result<()> {
+    self.do_log(Methods::Crit, args.into()).await
   }
 
-  pub async fn err(&self, args: String) -> anyhow::Result<()> {
-    self.do_log(Methods::Error, args).await
+  pub async fn err<T: Into<String>>(&self, args: T) -> anyhow::Result<()> {
+    self.do_log(Methods::Error, args.into()).await
   }
 
-  pub async fn warn(&self, args: String) -> anyhow::Result<()> {
-    self.do_log(Methods::Warn, args).await
+  pub async fn warn<T: Into<String>>(&self, args: T) -> anyhow::Result<()> {
+    self.do_log(Methods::Warn, args.into()).await
   }
 
-  pub async fn notice(&self, args: String) -> anyhow::Result<()> {
-    self.do_log(Methods::Notice, args).await
+  pub async fn notice<T: Into<String>>(&self, args: T) -> anyhow::Result<()> {
+    self.do_log(Methods::Notice, args.into()).await
   }
 
-  pub async fn info(&self, args: String) -> anyhow::Result<()> {
-    self.do_log(Methods::Info, args).await
+  pub async fn info<T: Into<String>>(&self, args: T) -> anyhow::Result<()> {
+    self.do_log(Methods::Info, args.into()).await
   }
 
-  pub async fn debug(&self, args: String) -> anyhow::Result<()> {
-    self.do_log(Methods::Debug, args).await
+  pub async fn debug<T: Into<String>>(&self, args: T) -> anyhow::Result<()> {
+    self.do_log(Methods::Debug, args.into()).await
   }
 
   pub async fn serialize(&self) -> anyhow::Result<String> {
