@@ -1,11 +1,7 @@
-use std::collections::BTreeMap;
-
 use http::HeaderMap;
-use kong_rs_protos::Kv;
-use prost_types::ListValue;
 use strum::{EnumString, IntoStaticStr};
 
-use crate::{pdk::Value, stream::Stream};
+use crate::stream::Stream;
 
 #[derive(Debug, PartialEq, IntoStaticStr, EnumString)]
 pub(crate) enum Methods {

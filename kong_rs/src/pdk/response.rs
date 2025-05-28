@@ -113,7 +113,7 @@ impl ResponsePDK {
   }
 
   pub async fn exit(&self, status: usize, body: Vec<u8>, headers: Option<HeaderMap>) -> anyhow::Result<()> {
-    let exit_args = ExitArgs { status: status as i32, body, headers: None };    // TODO: Set headers
+    let exit_args = ExitArgs { status: status as i32, body, headers: headers.map(Self::headers_to_struct) };
     self.stream.ask(Methods::Exit.into(), &exit_args).await
   }
 }
