@@ -9,7 +9,7 @@ license = "MIT"
 kong_rs_protos = { version = "0.1.0", path = "../kong_rs_protos" }
 kong_rs_macros = { version = "0.1.0", path = "../kong_rs_macros" }
 async-trait = "0.1.88"
-tokio = { version = "1.45.1", features = ["net", "sync"] }
+tokio = { version = "1.45.1", features = ["net", "sync", "rt"] }
 serde = "1.0.219"
 http = "1.3.1"
 prost = "0.13.5"

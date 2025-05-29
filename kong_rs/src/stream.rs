@@ -119,7 +119,7 @@ impl Stream {
       prost_types::value::Kind::BoolValue(b) => {
         ret.append(name, HeaderValue::from_str(&b.to_string())?);
       }
-      prost_types::value::Kind::StructValue(s) => {
+      prost_types::value::Kind::StructValue(_) => {
         // TODO: How do?
       },
       prost_types::value::Kind::ListValue(l) => {
