@@ -2,6 +2,8 @@
 name = "kong_rs"
 version = "0.1.0"
 edition = "2024"
+description = "Plugin Development Kit for developing Kong plugins in Rust"
+license = "MIT"
 
 [dependencies]
 kong_rs_protos = { version = "0.1.0", path = "../kong_rs_protos" }

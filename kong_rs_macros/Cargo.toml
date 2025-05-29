@@ -2,6 +2,8 @@
 name = "kong_rs_macros"
 version = "0.1.0"
 edition = "2024"
+description = "Convenience macros for kong_rs"
+license = "MIT"
 
 [dependencies]
 proc-macro2 = "1.0.95"
