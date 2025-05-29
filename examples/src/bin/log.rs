@@ -6,21 +6,25 @@ struct LogPlugin {
 
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
-struct LogPluginConfig { }
-
-impl PluginConfig for LogPluginConfig {
-  fn schema_fields() -> serde_json::Value {
-    serde_json::to_value(json!([{
-      "config": {
-        "type": "record",
-        "fields": [{
-          "my_field": { "type": "string", "required": true }
-        }]
-      }
-    }])).unwrap()
-  }
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, kong_rs::PluginConfig)]
+struct LogPluginConfig {
+  #[default = "my_value"]
+  my_field: String,
+  my_other_field: usize,
 }
+
+// impl PluginConfig for LogPluginConfig {
+//   fn schema_fields() -> serde_json::Value {
+//     serde_json::to_value(json!([{
+//       "config": {
+//         "type": "record",
+//         "fields": [{
+//           "my_field": { "type": "string", "required": true }
+//         }]
+//       }
+//     }])).unwrap()
+//   }
+// }
 
 #[async_trait::async_trait]
 impl Plugin for LogPlugin {
@@ -31,7 +35,6 @@ impl Plugin for LogPlugin {
   const PHASES: &[Phase] = &[Phase::Access];
 
   async fn access(&self, pdk: &Pdk) -> plugin::Result<Vec<u8>> {
-
     let inner: anyhow::Result<()> = async move {
       pdk.log().err("Oh no! Anyway...").await?;
       pdk.log().err(format!("Route: {}", pdk.router().get_route().await?.name)).await?;
@@ -40,9 +43,6 @@ impl Plugin for LogPlugin {
 
     inner.unwrap();
     Ok(None)
-
-    // Err(http::response::Builder::new().status(400).body("Uh oh!".as_bytes().to_vec()).unwrap())
-    // Ok(None)
   }
 }
 
@@ -53,7 +53,7 @@ impl PluginFactory for LogPluginFactory {
   type Plugin = LogPlugin;
 
   async fn new(&self, config_data: &str) -> Self::Plugin {
-    println!("Data: {}", config_data);
+    println!("Data: {:?}", serde_json::from_str::<'_, LogPluginConfig>(config_data).unwrap());
     LogPlugin {  } 
   }
 }
