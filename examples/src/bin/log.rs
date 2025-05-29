@@ -1,6 +1,4 @@
-use http::Response;
-use kong_rs::{pdk::{Value, Pdk}, plugin::{self, Phase, Plugin, PluginConfig, PluginFactory}, server::PluginServerBroker};
-use serde_json::json;
+use kong_rs::{pdk::Pdk, plugin::{self, Phase, Plugin, PluginFactory}, server::PluginServerBroker};
 
 struct LogPlugin {
 

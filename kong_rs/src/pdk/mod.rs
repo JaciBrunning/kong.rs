@@ -66,43 +66,63 @@ impl Into<prost_types::value::Kind> for Value {
 
 
 pub struct Pdk {
-  stream: Stream
+  stream: Stream,
+
+  client: ClientPDK,
+  ctx: CtxPDK,
+  log: LogPDK,
+  ngx: NgxPDK,
+  request: RequestPDK,
+  response: ResponsePDK,
+  router: RouterPDK,
+  service: ServicePDK
 }
 
 impl Pdk {
   pub fn new(stream: Stream) -> Self {
-    Self { stream }
+    Self {
+      stream: stream.clone(),
+
+      client: ClientPDK::new(stream.clone()),
+      ctx: CtxPDK::new(stream.clone()),
+      log: LogPDK::new(stream.clone()),
+      ngx: NgxPDK::new(stream.clone()),
+      request: RequestPDK::new(stream.clone()),
+      response: ResponsePDK::new(stream.clone()),
+      router: RouterPDK::new(stream.clone()),
+      service: ServicePDK::new(stream.clone()),
+    }
   }
 
-  pub fn client(&self) -> ClientPDK {
-    ClientPDK::new(self.stream.clone())
+  pub fn client(&self) -> &ClientPDK {
+    &self.client
   }
 
-  pub fn ctx(&self) -> CtxPDK {
-    CtxPDK::new(self.stream.clone())
+  pub fn ctx(&self) -> &CtxPDK {
+    &self.ctx
   }
 
-  pub fn log(&self) -> LogPDK {
-    LogPDK::new(self.stream.clone())
+  pub fn log(&self) -> &LogPDK {
+    &self.log
   }
 
-  pub fn ngx(&self) -> NgxPDK {
-    NgxPDK::new(self.stream.clone())
+  pub fn ngx(&self) -> &NgxPDK {
+    &self.ngx
   }
 
-  pub fn request(&self) -> RequestPDK {
-    RequestPDK::new(self.stream.clone())
+  pub fn request(&self) -> &RequestPDK {
+    &self.request
   }
 
-  pub fn response(&self) -> ResponsePDK {
-    ResponsePDK::new(self.stream.clone())
+  pub fn response(&self) -> &ResponsePDK {
+    &self.response
   }
 
-  pub fn router(&self) -> RouterPDK {
-    RouterPDK::new(self.stream.clone())
+  pub fn router(&self) -> &RouterPDK {
+    &self.router
   }
 
-  pub fn service(&self) -> ServicePDK {
-    ServicePDK::new(self.stream.clone())
+  pub fn service(&self) -> &ServicePDK {
+    &self.service
   }
 }

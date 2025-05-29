@@ -4,8 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-kong_rs_protos = { path = "../kong_rs_protos" }
-kong_rs_macros = { path = "../kong_rs_macros" }
+kong_rs_protos = { version = "0.1.0", path = "../kong_rs_protos" }
+kong_rs_macros = { version = "0.1.0", path = "../kong_rs_macros" }
 async-trait = "0.1.88"
 tokio = { version = "1.45.1", features = ["net", "sync"] }
 serde = "1.0.219"

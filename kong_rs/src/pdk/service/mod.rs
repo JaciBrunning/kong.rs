@@ -18,12 +18,19 @@ pub(crate) enum Methods {
 
 #[derive(Clone)]
 pub struct ServicePDK {
-  stream: Stream
+  stream: Stream,
+
+  request: ServiceRequestPDK,
+  response: ServiceResponsePDK
 }
 
 impl ServicePDK {
   pub fn new(stream: Stream) -> Self {
-    Self { stream }
+    Self {
+      stream: stream.clone(),
+      request: ServiceRequestPDK::new(stream.clone()),
+      response: ServiceResponsePDK::new(stream.clone()),
+    }
   }
 
   pub async fn set_upstream<A: Into<String>>(&self, addr: A) -> anyhow::Result<bool> {
@@ -35,11 +42,11 @@ impl ServicePDK {
     self.stream.ask_message_with_args(Methods::SetTarget.into(), &Target { host: host.into(), port: port as i32 }).await
   }
 
-  pub fn request(&self) -> ServiceRequestPDK {
-    ServiceRequestPDK::new(self.stream.clone())
+  pub fn request(&self) -> &ServiceRequestPDK {
+    &self.request
   }
 
-  pub fn response(&self) -> ServiceResponsePDK {
-    ServiceResponsePDK::new(self.stream.clone())
+  pub fn response(&self) -> &ServiceResponsePDK {
+    &self.response
   }
 }

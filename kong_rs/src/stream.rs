@@ -124,7 +124,6 @@ impl Stream {
       },
       prost_types::value::Kind::ListValue(l) => {
         for v in l.values {
-          // TODO how to get HeaderValue
           if let Some(kind) = v.kind {
             Self::unwrap_single_header(name, kind, ret)?;
           }

@@ -119,7 +119,7 @@ pub fn plugin_config_derive(item: TokenStream) -> TokenStream {
           syn::Type::Path(type_path) => {
             ty_to_fieldty(&type_path)
           },
-          _ => panic!("Unknown type: {:?}", ty)
+          _ => panic!("Unknown type")
         };
 
         mapped_ty.render(name, default)
