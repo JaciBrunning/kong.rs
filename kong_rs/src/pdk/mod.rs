@@ -66,8 +66,6 @@ impl Into<prost_types::value::Kind> for Value {
 
 
 pub struct Pdk {
-  stream: Stream,
-
   client: ClientPDK,
   ctx: CtxPDK,
   log: LogPDK,
@@ -81,8 +79,6 @@ pub struct Pdk {
 impl Pdk {
   pub fn new(stream: Stream) -> Self {
     Self {
-      stream: stream.clone(),
-
       client: ClientPDK::new(stream.clone()),
       ctx: CtxPDK::new(stream.clone()),
       log: LogPDK::new(stream.clone()),

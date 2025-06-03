@@ -1,7 +1,7 @@
 use kong_rs_protos::Kv;
 use strum::{EnumString, IntoStaticStr};
 
-use crate::stream::Stream;
+use crate::{stream::Stream, KongResult};
 
 use super::Value;
 
@@ -27,7 +27,7 @@ impl CtxPDK {
     Self { stream }
   }
 
-  pub async fn shared_set<K: Into<String>>(&self, key: K, value: Value) -> anyhow::Result<()> {
+  pub async fn shared_set<K: Into<String>>(&self, key: K, value: Value) -> KongResult<()> {
     let kind = match value {
         Value::Null => None,
         x => Some(x.into())
@@ -37,7 +37,7 @@ impl CtxPDK {
     self.stream.ask_message_with_args(Methods::SharedSet.into(), &kv).await
   }
 
-  pub async fn shared_get<K: Into<String>>(&self, key: K) -> anyhow::Result<Value> {
+  pub async fn shared_get<K: Into<String>>(&self, key: K) -> KongResult<Value> {
     let v: prost_types::Value = self.stream.ask_message_with_args(
       Methods::SharedGet.into(),
       &kong_rs_protos::String { v: key.into() }
@@ -46,7 +46,7 @@ impl CtxPDK {
     Ok(v.kind.map(Into::into).unwrap_or(Value::Null))
   }
 
-  pub async fn set<K: Into<String>>(&self, key: K, value: Value) -> anyhow::Result<()> {
+  pub async fn set<K: Into<String>>(&self, key: K, value: Value) -> KongResult<()> {
     let kind = match value {
         Value::Null => None,
         x => Some(x.into())
@@ -56,7 +56,7 @@ impl CtxPDK {
     self.stream.ask_message_with_args(Methods::Set.into(), &kv).await
   }
 
-  pub async fn get<K: Into<String>>(&self, key: K) -> anyhow::Result<Value> {
+  pub async fn get<K: Into<String>>(&self, key: K) -> KongResult<Value> {
     let v: prost_types::Value = self.stream.ask_message_with_args(
       Methods::Get.into(),
       &kong_rs_protos::String { v: key.into() }

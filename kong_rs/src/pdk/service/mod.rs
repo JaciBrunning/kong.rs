@@ -3,7 +3,7 @@ use request::ServiceRequestPDK;
 use response::ServiceResponsePDK;
 use strum::{EnumString, IntoStaticStr};
 
-use crate::stream::Stream;
+use crate::{stream::Stream, KongResult};
 
 pub mod request;
 pub mod response;
@@ -33,12 +33,12 @@ impl ServicePDK {
     }
   }
 
-  pub async fn set_upstream<A: Into<String>>(&self, addr: A) -> anyhow::Result<bool> {
+  pub async fn set_upstream<A: Into<String>>(&self, addr: A) -> KongResult<bool> {
     let r: kong_rs_protos::Bool = self.stream.ask_message_with_args(Methods::SetUpstream.into(), &kong_rs_protos::String { v: addr.into() }).await?;
     Ok(r.v)
   }
 
-  pub async fn set_target<H: Into<String>>(&self, host: H, port: usize) -> anyhow::Result<()> {
+  pub async fn set_target<H: Into<String>>(&self, host: H, port: usize) -> KongResult<()> {
     self.stream.ask_message_with_args(Methods::SetTarget.into(), &Target { host: host.into(), port: port as i32 }).await
   }
 

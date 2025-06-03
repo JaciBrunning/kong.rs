@@ -1,6 +1,6 @@
 use strum::{EnumString, IntoStaticStr};
 
-use crate::stream::Stream;
+use crate::{stream::Stream, KongResult};
 
 #[derive(Debug, PartialEq, IntoStaticStr, EnumString)]
 pub(crate) enum Methods {
@@ -18,7 +18,7 @@ impl NgxPDK {
     Self { stream }
   }
 
-  pub async fn get_var<K: Into<String>>(&self, key: K) -> anyhow::Result<String> {
+  pub async fn get_var<K: Into<String>>(&self, key: K) -> KongResult<String> {
     self.stream.ask_string_with_args(Methods::GetVar.into(), &kong_rs_protos::String { v: key.into() }).await
   }
 }

@@ -2,7 +2,7 @@ use http::HeaderMap;
 use kong_rs_protos::RawBodyResult;
 use strum::{EnumString, IntoStaticStr};
 
-use crate::stream::Stream;
+use crate::{stream::Stream, KongError, KongResult};
 
 pub enum Body {
   Content(Vec<u8>),
@@ -56,71 +56,71 @@ impl RequestPDK {
     Self { stream }
   }
 
-  pub async fn get_scheme(&self) -> anyhow::Result<String> {
+  pub async fn get_scheme(&self) -> KongResult<String> {
     self.stream.ask_string(Methods::GetScheme.into()).await
   }
 
-  pub async fn get_host(&self) -> anyhow::Result<String> {
+  pub async fn get_host(&self) -> KongResult<String> {
     self.stream.ask_string(Methods::GetHost.into()).await
   }
 
-  pub async fn get_port(&self) -> anyhow::Result<usize> {
+  pub async fn get_port(&self) -> KongResult<usize> {
     self.stream
       .ask_int(Methods::GetPort.into())
       .await
       .map(|port| port as usize)
   }
 
-  pub async fn get_forwarded_scheme(&self) -> anyhow::Result<String> {
+  pub async fn get_forwarded_scheme(&self) -> KongResult<String> {
     self.stream
       .ask_string(Methods::GetForwardedScheme.into())
       .await
   }
 
-  pub async fn get_forwarded_host(&self) -> anyhow::Result<String> {
+  pub async fn get_forwarded_host(&self) -> KongResult<String> {
     self.stream
       .ask_string(Methods::GetForwardedHost.into())
       .await
   }
 
-  pub async fn get_forwarded_port(&self) -> anyhow::Result<usize> {
+  pub async fn get_forwarded_port(&self) -> KongResult<usize> {
     self.stream
       .ask_int(Methods::GetForwardedPort.into())
       .await
       .map(|port| port as usize)
   }
 
-  pub async fn get_http_version(&self) -> anyhow::Result<f64> {
+  pub async fn get_http_version(&self) -> KongResult<f64> {
     self.stream
       .ask_number(Methods::GetForwardedPort.into())
       .await
   }
 
-  pub async fn get_method(&self) -> anyhow::Result<String> {
+  pub async fn get_method(&self) -> KongResult<String> {
     self.stream.ask_string(Methods::GetMethod.into()).await
   }
 
-  pub async fn get_path(&self) -> anyhow::Result<String> {
+  pub async fn get_path(&self) -> KongResult<String> {
     self.stream.ask_string(Methods::GetPath.into()).await
   }
 
-  pub async fn get_path_with_query(&self) -> anyhow::Result<String> {
+  pub async fn get_path_with_query(&self) -> KongResult<String> {
     self.stream
       .ask_string(Methods::GetPathWithQuery.into())
       .await
   }
 
-  pub async fn get_raw_query(&self) -> anyhow::Result<String> {
+  pub async fn get_raw_query(&self) -> KongResult<String> {
     self.stream.ask_string(Methods::GetRawQuery.into()).await
   }
 
-  pub async fn get_query_arg(&self, name: String) -> anyhow::Result<String> {
+  pub async fn get_query_arg(&self, name: String) -> KongResult<String> {
     self.stream
       .ask_string_with_args(Methods::GetQueryArg.into(), &kong_rs_protos::String { v: name })
       .await
   }
 
-  pub async fn get_query(&self, max_args: Option<usize>) -> anyhow::Result<HeaderMap> {
+  pub async fn get_query(&self, max_args: Option<usize>) -> KongResult<HeaderMap> {
     let max_args = max_args.unwrap_or(100);
     let headers: prost_types::Struct = self.stream.ask_message_with_args(
       Methods::GetQuery.into(),
@@ -129,13 +129,13 @@ impl RequestPDK {
     self.stream.unwrap_headers(headers)
   }
 
-  pub async fn get_header(&self, name: String) -> anyhow::Result<String> {
+  pub async fn get_header(&self, name: String) -> KongResult<String> {
     self.stream
       .ask_string_with_args(Methods::GetHeader.into(), &kong_rs_protos::String { v: name })
       .await
   }
 
-  pub async fn get_headers(&self, max_headers: Option<usize>) -> anyhow::Result<HeaderMap> {
+  pub async fn get_headers(&self, max_headers: Option<usize>) -> KongResult<HeaderMap> {
     let max_headers = max_headers.unwrap_or(100);
     let headers: prost_types::Struct = self.stream.ask_message_with_args(
       Methods::GetHeaders.into(),
@@ -144,7 +144,7 @@ impl RequestPDK {
     self.stream.unwrap_headers(headers)
   }
 
-  pub async fn get_raw_body(&self) -> anyhow::Result<Body> {
+  pub async fn get_raw_body(&self) -> KongResult<Body> {
     let body: RawBodyResult = self.stream.ask_message(Methods::GetRawBody.into()).await?;
     match body.kind {
       Some(kind) => match kind {
@@ -155,7 +155,7 @@ impl RequestPDK {
           Ok(Body::Path(path))
         },
         kong_rs_protos::raw_body_result::Kind::Error(err) => {
-          Err(anyhow::anyhow!("Body Error: {}", err))
+          Err(KongError::BodyError(format!("Body Error: {}", err)))
         },
       },
       None => Ok(Body::Empty),

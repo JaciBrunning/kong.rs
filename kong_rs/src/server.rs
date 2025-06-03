@@ -3,7 +3,7 @@ use std::{collections::HashMap, path::Path, sync::{atomic::AtomicI32, Arc}, time
 use kong_rs_protos::{rpc_call::Call, rpc_return::Return, InstanceStatus, PluginInfo, PluginNames, RpcCall, RpcReturn};
 use tokio::{net::UnixListener, sync::RwLock};
 
-use crate::{pdk::Pdk, plugin::{ErasedPlugin, ErasedPluginFactory, Phase}, stream::Stream};
+use crate::{pdk::Pdk, plugin::{ErasedPlugin, ErasedPluginFactory, Phase}, stream::Stream, KongError, KongResult};
 
 // TODO: At the moment, each plugin server can only host a single plugin (Kong limitation.)
 
@@ -49,15 +49,15 @@ impl PluginServerBroker {
     self.plugin_factories.write().await.insert(factory.get_info().name, RegisteredFactory { time: SystemTime::now(), factory: Box::new(factory) });
   }
 
-  pub async fn run<'a, I: Iterator<Item = String>>(&self, mut args: I) -> anyhow::Result<()> {
-    let name = args.next().ok_or(anyhow::anyhow!("Missing name argument"))?;
+  pub async fn run<'a, I: Iterator<Item = String>>(&self, mut args: I) -> KongResult<()> {
+    let name = args.next().ok_or(KongError::LaunchError("No plugin name provided".to_owned()))?;
     let basename = Path::new(&name).file_name().unwrap().to_str().unwrap();
 
     if args.any(|x| x == "-dump") {
       // Dump
       let factory = self.plugin_factories.read().await;
       if factory.len() != 1 {
-        anyhow::bail!("Currently, kong only supports a single plugin per process.");
+        Err(KongError::LaunchError("Currently, kong only supports a single plugin per process.".to_owned()))?;
       }
 
       let factory = factory.values().next().unwrap();
@@ -67,7 +67,7 @@ impl PluginServerBroker {
         Name: basename.to_owned(),
         Priority: info.priority as i32,
         Version: info.version,
-        Schema: Schema { name: info.name, fields: info.schema },
+        Schema: Schema { name: info.name, fields: info.fields },
         Phases: info.phases.into_iter().map(|x| Into::<&str>::into(x).to_owned()).collect()
       })?);
 
@@ -110,7 +110,7 @@ impl PluginServer {
     self.plugin_factories.write().await.insert(factory.get_info().name, RegisteredFactory { time: SystemTime::now(), factory: Box::new(factory) });
   }
 
-  pub async fn handle(&self, stream: Stream) -> anyhow::Result<()> {
+  pub async fn handle(&self, stream: Stream) -> KongResult<()> {
     loop {
       let req = stream.read_message::<RpcCall>().await?;
       
@@ -124,7 +124,7 @@ impl PluginServer {
 }
 
 impl PluginServer {
-  async fn handle_call(&self, stream: Stream, request: RpcCall) -> anyhow::Result<Option<RpcReturn>> {
+  async fn handle_call(&self, stream: Stream, request: RpcCall) -> KongResult<Option<RpcReturn>> {
     let resp = match request.call {
       Some(Call::CmdGetPluginNames(_)) => {
         Some(Return::PluginNames(PluginNames {
@@ -136,7 +136,7 @@ impl PluginServer {
         let factory = factories.get(&get_info.name);
         if let Some(factory) = factory {
           let info = factory.factory.get_info();
-          let schema = Schema { name: info.name.clone(), fields: info.schema };
+          let schema = Schema { name: info.name.clone(), fields: info.fields };
           Some(Return::PluginInfo(PluginInfo {
             name: info.name,
             updated_at: factory.time.duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs() as i64,
@@ -197,7 +197,7 @@ impl PluginServer {
         None
       },
       Some(Call::CmdHandleEvent(event)) => {
-        let phase = Phase::try_from(event.event_name.as_str()).map_err(|_| anyhow::anyhow!("Could not decode phase"))?;
+        let phase = Phase::try_from(event.event_name.as_str()).map_err(|_| KongError::InvalidValueError("Cannot decode phase from event name".to_owned()))?;
         let instances = self.instances.read().await;
         let inst = instances.get(&event.instance_id);
 

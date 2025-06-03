@@ -1,6 +1,6 @@
 use strum::{EnumString, IntoStaticStr};
 
-use crate::stream::Stream;
+use crate::{stream::Stream, KongResult};
 
 #[derive(Debug, PartialEq, IntoStaticStr, EnumString)]
 pub(crate) enum Methods {
@@ -32,41 +32,41 @@ impl LogPDK {
     Self { stream }
   }
 
-  async fn do_log(&self, method: Methods, args: String) -> anyhow::Result<()> {
+  async fn do_log(&self, method: Methods, args: String) -> KongResult<()> {
     self.stream.ask(method.into(), &prost_types::ListValue {
       values: vec![prost_types::Value { kind: Some(prost_types::value::Kind::StringValue(args)) }]
     }).await
   }
 
-  pub async fn alert<T: Into<String>>(&mut self, args: T) -> anyhow::Result<()> {
+  pub async fn alert<T: Into<String>>(&mut self, args: T) -> KongResult<()> {
     self.do_log(Methods::Alert, args.into()).await
   }
 
-  pub async fn crit<T: Into<String>>(&self, args: T) -> anyhow::Result<()> {
+  pub async fn crit<T: Into<String>>(&self, args: T) -> KongResult<()> {
     self.do_log(Methods::Crit, args.into()).await
   }
 
-  pub async fn err<T: Into<String>>(&self, args: T) -> anyhow::Result<()> {
+  pub async fn err<T: Into<String>>(&self, args: T) -> KongResult<()> {
     self.do_log(Methods::Error, args.into()).await
   }
 
-  pub async fn warn<T: Into<String>>(&self, args: T) -> anyhow::Result<()> {
+  pub async fn warn<T: Into<String>>(&self, args: T) -> KongResult<()> {
     self.do_log(Methods::Warn, args.into()).await
   }
 
-  pub async fn notice<T: Into<String>>(&self, args: T) -> anyhow::Result<()> {
+  pub async fn notice<T: Into<String>>(&self, args: T) -> KongResult<()> {
     self.do_log(Methods::Notice, args.into()).await
   }
 
-  pub async fn info<T: Into<String>>(&self, args: T) -> anyhow::Result<()> {
+  pub async fn info<T: Into<String>>(&self, args: T) -> KongResult<()> {
     self.do_log(Methods::Info, args.into()).await
   }
 
-  pub async fn debug<T: Into<String>>(&self, args: T) -> anyhow::Result<()> {
+  pub async fn debug<T: Into<String>>(&self, args: T) -> KongResult<()> {
     self.do_log(Methods::Debug, args.into()).await
   }
 
-  pub async fn serialize(&self) -> anyhow::Result<String> {
+  pub async fn serialize(&self) -> KongResult<String> {
     self.stream.ask_string(Methods::Serialize.into()).await
   }
 }

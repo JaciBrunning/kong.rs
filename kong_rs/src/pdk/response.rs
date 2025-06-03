@@ -3,7 +3,7 @@ use kong_rs_protos::{ExitArgs, Kv};
 use prost_types::ListValue;
 use strum::{EnumString, IntoStaticStr};
 
-use crate::stream::Stream;
+use crate::{stream::Stream, KongResult};
 
 #[derive(Debug, PartialEq, IntoStaticStr, EnumString)]
 pub(crate) enum Methods {
@@ -39,20 +39,20 @@ impl ResponsePDK {
     Self { stream }
   }
 
-  pub async fn get_status(&self) -> anyhow::Result<usize> {
+  pub async fn get_status(&self) -> KongResult<usize> {
     self.stream
       .ask_int(Methods::GetStatus.into())
       .await
       .map(|port| port as usize)
   }
   
-  pub async fn get_header(&self, name: String) -> anyhow::Result<String> {
+  pub async fn get_header(&self, name: String) -> KongResult<String> {
     self.stream
       .ask_string_with_args(Methods::GetHeader.into(), &kong_rs_protos::String { v: name })
       .await
   }
 
-  pub async fn get_headers(&self, max_headers: Option<usize>) -> anyhow::Result<HeaderMap> {
+  pub async fn get_headers(&self, max_headers: Option<usize>) -> KongResult<HeaderMap> {
     let max_headers = max_headers.unwrap_or(100);
     let headers: prost_types::Struct = self.stream.ask_message_with_args(
       Methods::GetHeaders.into(),
@@ -61,29 +61,29 @@ impl ResponsePDK {
     self.stream.unwrap_headers(headers)
   }
 
-  pub async fn get_source(&self) -> anyhow::Result<String> {
+  pub async fn get_source(&self) -> KongResult<String> {
     self.stream.ask_string(Methods::GetStatus.into()).await
   }
 
-  pub async fn set_status(&self, status: usize) -> anyhow::Result<()> {
+  pub async fn set_status(&self, status: usize) -> KongResult<()> {
     self.stream.send_int(Methods::SetStatus.into(), status as i32).await
   }
 
-  pub async fn set_header(&self, name: &str, value: &str) -> anyhow::Result<()> {
+  pub async fn set_header(&self, name: &str, value: &str) -> KongResult<()> {
     self.stream.ask(Methods::SetHeader.into(), &Kv {
       k: name.to_owned(),
       v: Some(prost_types::Value { kind: Some(prost_types::value::Kind::StringValue(value.to_owned())) })
     }).await
   }
 
-  pub async fn add_header(&self, name: &str, value: &str) -> anyhow::Result<()> {
+  pub async fn add_header(&self, name: &str, value: &str) -> KongResult<()> {
     self.stream.ask(Methods::AddHeader.into(), &Kv {
       k: name.to_owned(),
       v: Some(prost_types::Value { kind: Some(prost_types::value::Kind::StringValue(value.to_owned())) })
     }).await
   }
 
-  pub async fn clear_header(&self, name: &str) -> anyhow::Result<()> {
+  pub async fn clear_header(&self, name: &str) -> KongResult<()> {
     self.stream.ask(Methods::ClearHeader.into(), &kong_rs_protos::String { v: name.to_owned() }).await
   }
 
@@ -107,12 +107,12 @@ impl ResponsePDK {
     s
   }
 
-  pub async fn set_headers(&self, headers: HeaderMap) -> anyhow::Result<()> {
+  pub async fn set_headers(&self, headers: HeaderMap) -> KongResult<()> {
     let s = Self::headers_to_struct(headers);
     self.stream.ask(Methods::SetHeaders.into(), &s).await
   }
 
-  pub async fn exit(&self, status: usize, body: Vec<u8>, headers: Option<HeaderMap>) -> anyhow::Result<()> {
+  pub async fn exit(&self, status: usize, body: Vec<u8>, headers: Option<HeaderMap>) -> KongResult<()> {
     let exit_args = ExitArgs { status: status as i32, body, headers: headers.map(Self::headers_to_struct) };
     self.stream.ask(Methods::Exit.into(), &exit_args).await
   }

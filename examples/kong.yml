@@ -8,7 +8,12 @@ services:
   - name: kong-rs-log
     config:
       my_field: "abcd"
-      my_other_field: 123
+      my_other_field:
+      - 69
+      - 420
+      inner:
+        a: "a-b"
+        c: Test3
   routes:
   - name: my-route
     paths:

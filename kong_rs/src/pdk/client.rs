@@ -1,7 +1,7 @@
 use kong_rs_protos::{AuthenticateArgs, AuthenticatedCredential, Consumer, ConsumerSpec};
 use strum::{EnumString, IntoStaticStr};
 
-use crate::stream::Stream;
+use crate::{stream::Stream, KongResult};
 
 
 #[derive(Debug, PartialEq, IntoStaticStr, EnumString)]
@@ -36,39 +36,39 @@ impl ClientPDK {
     Self { stream }
   }
 
-  pub async fn get_ip(&self) -> anyhow::Result<String> {
+  pub async fn get_ip(&self) -> KongResult<String> {
     self.stream.ask_string(Methods::GetIp.into()).await
   }
 
-  pub async fn get_forwarded_ip(&self) -> anyhow::Result<String> {
+  pub async fn get_forwarded_ip(&self) -> KongResult<String> {
     self.stream.ask_string(Methods::GetForwardedIp.into()).await
   }
 
-  pub async fn get_port(&self) -> anyhow::Result<usize> {
+  pub async fn get_port(&self) -> KongResult<usize> {
     self.stream.ask_int(Methods::GetPort.into()).await.map(|port| port as usize)
   }
 
-  pub async fn get_forwarded_port(&self) -> anyhow::Result<usize> {
+  pub async fn get_forwarded_port(&self) -> KongResult<usize> {
     self.stream.ask_int(Methods::GetForwardedPort.into()).await.map(|port| port as usize)
   }
 
-  pub async fn get_credential(&self) -> anyhow::Result<AuthenticatedCredential> {
+  pub async fn get_credential(&self) -> KongResult<AuthenticatedCredential> {
     self.stream.ask_message(Methods::GetCredential.into()).await
   }
 
-  pub async fn load_consumer(&self, consumer: ConsumerSpec) -> anyhow::Result<Consumer> {
+  pub async fn load_consumer(&self, consumer: ConsumerSpec) -> KongResult<Consumer> {
     self.stream.ask_message_with_args(Methods::LoadConsumer.into(), &consumer).await
   }
 
-  pub async fn get_consumer(&self) -> anyhow::Result<Consumer> {
+  pub async fn get_consumer(&self) -> KongResult<Consumer> {
     self.stream.ask_message(Methods::GetConsumer.into()).await
   }
 
-  pub async fn authenticate(&self, auth: AuthenticateArgs) -> anyhow::Result<()> {
+  pub async fn authenticate(&self, auth: AuthenticateArgs) -> KongResult<()> {
     self.stream.ask(Methods::Authenticate.into(), &auth).await
   }
 
-  pub async fn get_protocol(&self, allow_terminated: bool) -> anyhow::Result<String> {
+  pub async fn get_protocol(&self, allow_terminated: bool) -> KongResult<String> {
     self.stream.ask_string_with_args(Methods::GetProtocol.into(), &kong_rs_protos::Bool { v: allow_terminated }).await
   }
 }

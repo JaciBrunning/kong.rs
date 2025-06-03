@@ -1,7 +1,7 @@
 use kong_rs_protos::{Route, Service};
 use strum::{EnumString, IntoStaticStr};
 
-use crate::stream::Stream;
+use crate::{stream::Stream, KongResult};
 
 #[derive(Debug, PartialEq, IntoStaticStr, EnumString)]
 pub(crate) enum Methods {
@@ -21,11 +21,11 @@ impl RouterPDK {
     Self { stream }
   }
 
-  pub async fn get_route(&self) -> anyhow::Result<Route> {
+  pub async fn get_route(&self) -> KongResult<Route> {
     self.stream.ask_message(Methods::GetRoute.into()).await
   }
 
-  pub async fn get_service(&self) -> anyhow::Result<Service> {
+  pub async fn get_service(&self) -> KongResult<Service> {
     self.stream.ask_message(Methods::GetService.into()).await
   }
 }

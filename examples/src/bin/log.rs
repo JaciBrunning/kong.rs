@@ -1,28 +1,47 @@
-use kong_rs::{pdk::Pdk, plugin::{self, Phase, Plugin, PluginFactory}, server::PluginServerBroker};
+use kong_rs::{ok_or_internal_error, KongError, Pdk, Phase, Plugin, PluginFactory, PluginResult, PluginServerBroker};
 
-struct LogPlugin {
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, kong_rs::PluginConfig)]
+enum MyEnum {
+  Test1,
+  Test2,
+  Test3
+}
 
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, kong_rs::PluginConfig)]
+struct InnerConfig {
+  a: String,
+  b: Option<String>,
+  c: MyEnum
+}
+
+impl Default for InnerConfig {
+  fn default() -> Self {
+    Self {
+      a: "Test".to_owned(),
+      b: None,
+      c: MyEnum::Test2
+    }
+  }
 }
 
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, kong_rs::PluginConfig)]
 struct LogPluginConfig {
-  #[default = "my_value"]
   my_field: String,
-  my_other_field: usize,
+  my_other_field: Vec<isize>,
+  inner: InnerConfig
 }
 
-// impl PluginConfig for LogPluginConfig {
-//   fn schema_fields() -> serde_json::Value {
-//     serde_json::to_value(json!([{
-//       "config": {
-//         "type": "record",
-//         "fields": [{
-//           "my_field": { "type": "string", "required": true }
-//         }]
-//       }
-//     }])).unwrap()
-//   }
-// }
+impl Default for LogPluginConfig {
+  fn default() -> Self {
+    Self {
+      my_field: "Hello World".to_owned(),
+      my_other_field: vec![42, 69, 420],
+      inner: InnerConfig::default()
+    }
+  }
+}
+
+struct LogPlugin { }
 
 #[async_trait::async_trait]
 impl Plugin for LogPlugin {
@@ -32,16 +51,17 @@ impl Plugin for LogPlugin {
   const PRIORITY: i32 = 10;
   const PHASES: &[Phase] = &[Phase::Access];
 
-  async fn access(&self, pdk: &Pdk) -> plugin::Result<Vec<u8>> {
-    let inner: anyhow::Result<()> = async move {
+  async fn access(&self, pdk: &Pdk) -> PluginResult<Vec<u8>> {
+    ok_or_internal_error(async move {
       pdk.log().err("Oh no! Anyway...").await?;
       pdk.log().err(format!("Route: {}", pdk.router().get_route().await?.name)).await?;
       Ok(())
-    }.await;
+    }.await)?;
 
-    inner.unwrap();
     Ok(None)
   }
+
+  fn default_config() -> Self::Config { Self::Config::default() }
 }
 
 struct LogPluginFactory {}

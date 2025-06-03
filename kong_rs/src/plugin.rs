@@ -1,8 +1,8 @@
 use http::Response;
 
-use crate::pdk::Pdk;
+use crate::{config::{PluginConfig, PluginConfigFieldVariant as _}, pdk::Pdk};
 
-pub type Result<T> = std::result::Result<Option<Response<T>>, Response<T>>;
+pub type PluginResult<T> = std::result::Result<Option<Response<T>>, Response<T>>;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Phase {
@@ -39,7 +39,8 @@ pub trait Plugin : Send + Sync {
 
   const PHASES: &[Phase];
   
-  async fn access(&self, pdk: &Pdk) -> Result<Vec<u8>>;
+  fn default_config() -> Self::Config;
+  async fn access(&self, pdk: &Pdk) -> PluginResult<Vec<u8>>;
 }
 
 #[async_trait::async_trait]
@@ -73,16 +74,12 @@ impl<P: Plugin> ErasedPlugin for P {
   }
 }
 
-pub trait PluginConfig {
-  fn schema_fields() -> serde_json::Value;
-}
-
 pub struct PluginInfo {
   pub name: String,
   pub phases: Vec<Phase>,
   pub version: String,
   pub priority: i32,
-  pub schema: serde_json::Value,
+  pub fields: serde_json::Value,
 }
 
 #[async_trait::async_trait]
@@ -109,7 +106,9 @@ impl<F: PluginFactory + Send + Sync> ErasedPluginFactory for F {
       phases: F::Plugin::PHASES.to_vec(),
       version: F::Plugin::VERSION.to_owned(),
       priority: F::Plugin::PRIORITY,
-      schema: <F::Plugin as Plugin>::Config::schema_fields()
+      fields: serde_json::json!([{
+        "config": F::Plugin::default_config().render_this()
+      }])
     }
   }
 }
